@@ -3,6 +3,7 @@ package gormimpl
 import (
 	"context"
 	"fmt"
+	"github.com/lyft/flyteidl/gen/pb-go/flyteidl/admin"
 
 	"github.com/lyft/flyteadmin/pkg/common"
 
@@ -145,6 +146,36 @@ func (r *ExecutionRepo) List(ctx context.Context, input interfaces.ListResourceI
 	return interfaces.ExecutionCollectionOutput{
 		Executions: executions,
 	}, nil
+}
+
+func (r *ExecutionRepo) RetrieveAndLock(ctx context.Context, info *admin.AgentInformation) (models.Execution, error) {
+
+	// TODO does not handle Aborting yet, todo handle it
+	clusterName := "Unknown"
+	if info != nil {
+		clusterName = info.ClusterName
+	}
+	var exec models.Execution
+	if err := r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Raw("SELECT * FROM executions WHERE " +
+			"phase = '?' or ( phase = '?' and updated_at < NOW() - interval '? seconds') LIMIT 1" +
+			"FOR UPDATE SKIP LOCKED", core.WorkflowExecution_UNDEFINED.String(), core.WorkflowExecution_QUEUED.String(), 60).First(&exec)
+		if result.Error != nil {
+			return r.errorTransformer.ToFlyteAdminError(result.Error)
+		}
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("no executions found")
+		}
+		exec.Phase = core.WorkflowExecution_QUEUED.String()
+		exec.Cluster = clusterName
+		if err := tx.Model(&exec).Updates(&exec).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return models.Execution{}, err
+	}
+	return exec, nil
 }
 
 // Returns an instance of ExecutionRepoInterface

@@ -19,6 +19,8 @@ type LaunchPlanRepoInterface interface {
 	SetActive(ctx context.Context, toEnable models.LaunchPlan, toDisable *models.LaunchPlan) error
 	// Returns a matching launch plan if it exists.
 	Get(ctx context.Context, input GetResourceInput) (models.LaunchPlan, error)
+	// Returns a matching launch plan if it exists.
+	GetByID(ctx context.Context, id uint) (models.LaunchPlan, error)
 	// Returns launch plan revisions matching query parameters. A limit must be provided for the results page size.
 	List(ctx context.Context, input ListResourceInput) (LaunchPlanCollectionOutput, error)
 	// Returns a list of identifiers for launch plans.  A limit must be provided for the results page size.

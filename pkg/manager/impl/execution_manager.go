@@ -1303,6 +1303,44 @@ func (m *ExecutionManager) TerminateExecution(
 	return &admin.ExecutionTerminateResponse{}, nil
 }
 
+func (m *ExecutionManager) RetrieveAndLockExecution(
+	ctx context.Context, request admin.RetrieveAndLockExecutionRequest) (*admin.RetrieveAndLockExecutionResponse, error) {
+	ctx = getExecutionContext(ctx, request.Id)
+	// Save the abort reason (best effort)
+	executionModel, err := m.db.ExecutionRepo().RetrieveAndLock(ctx, request.Agent)
+	if err != nil {
+		logger.Infof(ctx, "couldn't find execution [%+v] to save termination cause", request.Id)
+		return nil, err
+	}
+
+	lp, err := m.db.LaunchPlanRepo().GetByID(ctx, executionModel.LaunchPlanID)
+	if err != nil {
+		return nil, err
+	}
+
+	m.offloadInputs()
+
+	startAction := &admin.StartExecutionAction{
+		Id: &core.WorkflowExecutionIdentifier{
+			Project:              executionModel.Project,
+			Domain:               executionModel.Domain,
+			Name:                 executionModel.Name,
+		},
+		Closure: nil,
+		Inputs: nil,
+		ExecMetadata: &admin.ExecutionRuntimeMetadata{
+			AcceptedAt: executionModel.CreatedAt,
+		},
+	}
+
+	execResp := &admin.RetrieveAndLockExecutionResponse{
+		Action: &admin.RetrieveAndLockExecutionResponse_Start{
+			Start: startAction,
+		},
+	}
+	return execResp, nil
+}
+
 func newExecutionSystemMetrics(scope promutils.Scope) executionSystemMetrics {
 	return executionSystemMetrics{
 		Scope: scope,

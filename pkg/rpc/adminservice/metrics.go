@@ -17,6 +17,7 @@ type executionEndpointMetrics struct {
 	getData     util.RequestMetrics
 	list        util.RequestMetrics
 	terminate   util.RequestMetrics
+	retrieve    util.RequestMetrics
 }
 
 type launchPlanEndpointMetrics struct {
@@ -126,6 +127,7 @@ func InitMetrics(adminScope promutils.Scope) AdminMetrics {
 			getData:     util.NewRequestMetrics(adminScope, "get_execution_data"),
 			list:        util.NewRequestMetrics(adminScope, "list_execution"),
 			terminate:   util.NewRequestMetrics(adminScope, "terminate_execution"),
+			retrieve:    util.NewRequestMetrics(adminScope, "retrieve_lock_execution"),
 		},
 		launchPlanEndpointMetrics: launchPlanEndpointMetrics{
 			scope:      adminScope,

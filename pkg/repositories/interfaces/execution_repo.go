@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"github.com/lyft/flyteidl/gen/pb-go/flyteidl/admin"
 
 	"github.com/lyft/flyteadmin/pkg/repositories/models"
 )
@@ -21,6 +22,8 @@ type ExecutionRepoInterface interface {
 	GetByID(ctx context.Context, id uint) (models.Execution, error)
 	// Returns executions matching query parameters. A limit must be provided for the results page size.
 	List(ctx context.Context, input ListResourceInput) (ExecutionCollectionOutput, error)
+	// Returns one execution and updates the status to Queued
+	RetrieveAndLock(ctx context.Context, info *admin.AgentInformation) (models.Execution, error)
 }
 
 // Response format for a query on workflows.

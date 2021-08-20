@@ -191,3 +191,29 @@ func (m *AdminService) TerminateExecution(
 	m.Metrics.executionEndpointMetrics.terminate.Success()
 	return response, nil
 }
+
+func (m *AdminService) RetrieveAndLockExecution(
+	ctx context.Context, request *admin.RetrieveAndLockExecutionRequest) (*admin.RetrieveAndLockExecutionResponse, error) {
+	defer m.interceptPanic(ctx, request)
+	requestedAt := time.Now()
+	if request == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Incorrect request, nil requests not allowed")
+	}
+	var response *admin.RetrieveAndLockExecutionResponse
+	var err error
+	m.Metrics.executionEndpointMetrics.terminate.Time(func() {
+		response, err = m.ExecutionManager.RetrieveAndLockExecution(ctx, *request)
+	})
+
+	audit.NewLogBuilder().WithAuthenticatedCtx(ctx).WithRequest(
+		"TerminateExecution",
+		audit.ParametersFromAgentInfo(request.Agent),
+		audit.ReadWrite,
+		requestedAt,
+	).WithResponse(time.Now(), err).Log(ctx)
+	if err != nil {
+		return nil, util.TransformAndRecordError(err, &m.Metrics.executionEndpointMetrics.terminate)
+	}
+	m.Metrics.executionEndpointMetrics.terminate.Success()
+	return response, nil
+}

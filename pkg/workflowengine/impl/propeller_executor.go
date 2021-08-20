@@ -68,7 +68,7 @@ func addMapValues(overrides map[string]string, flyteWfValues map[string]string) 
 	return flyteWfValues
 }
 
-func (c *FlytePropeller) addPermissions(launchPlan admin.LaunchPlan, flyteWf *v1alpha1.FlyteWorkflow) {
+func addPermissions(launchPlan admin.LaunchPlan, flyteWf *v1alpha1.FlyteWorkflow, roleNameKey string) {
 	// Set role permissions based on launch plan Auth values.
 	// The branched-ness of this check is due to the presence numerous deprecated fields
 	var role string
@@ -88,7 +88,7 @@ func (c *FlytePropeller) addPermissions(launchPlan admin.LaunchPlan, flyteWf *v1
 		if flyteWf.Annotations == nil {
 			flyteWf.Annotations = map[string]string{}
 		}
-		flyteWf.Annotations[c.roleNameKey] = role
+		flyteWf.Annotations[roleNameKey] = role
 	}
 }
 
@@ -133,7 +133,7 @@ func (c *FlytePropeller) ExecuteWorkflow(ctx context.Context, input interfaces.E
 	acceptAtWrapper := v1.NewTime(input.AcceptedAt)
 	flyteWf.AcceptedAt = &acceptAtWrapper
 
-	c.addPermissions(input.Reference, flyteWf)
+	addPermissions(input.Reference, flyteWf, c.roleNameKey)
 
 	labels := addMapValues(input.Labels, flyteWf.Labels)
 	flyteWf.Labels = labels
@@ -277,6 +277,7 @@ func (c *FlytePropeller) TerminateWorkflowExecution(
 	}
 	err = target.FlyteClient.FlyteworkflowV1alpha1().FlyteWorkflows(namespace).Delete(input.ExecutionID.GetName(), &v1.DeleteOptions{
 		PropagationPolicy: &deletePropagationBackground,
+
 	})
 	// An IsNotFound error indicates the resource is already deleted.
 	if err != nil && !k8_api_err.IsNotFound(err) {

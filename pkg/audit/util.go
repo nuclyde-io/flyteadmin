@@ -91,3 +91,12 @@ func ParametersFromTaskExecutionIdentifier(identifier *core.TaskExecutionIdentif
 	params[TaskVersion] = identifier.TaskId.Version
 	return params
 }
+
+func ParametersFromAgentInfo(info *admin.AgentInformation) requestParameters {
+	if info == nil {
+		return requestParameters{}
+	}
+	// Add some information here
+	return requestParameters{
+	}
+}

@@ -37,6 +37,7 @@ type AdminService struct {
 	Metrics              AdminMetrics
 }
 
+
 // Intercepts all admin requests to handle panics during execution.
 func (m *AdminService) interceptPanic(ctx context.Context, request proto.Message) {
 	err := recover()
